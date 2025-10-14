@@ -3,52 +3,61 @@ package com.example.youome
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.viewpager2.widget.ViewPager2
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayoutMediator
-
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var viewPager2: ViewPager2
-    private lateinit var tabLayout: TabLayout
-    private lateinit var pages: ArrayList<Fragment>
-    private lateinit var homePage: HomeFragment
-    private lateinit var debtPage : DebtFragment
-    private lateinit var analyticsPage : AnalyticsFragment
-    private lateinit var settingsPage : SettingsFragment
-    public val tabNames : List<String> = listOf("Home" , "Debts" , "Analytics", "Settings")
-    private lateinit var myMyFragmentStateAdapter: MyFragmentStateAdapter
-
+    private lateinit var bottomNavigationView: BottomNavigationView
+    private lateinit var homeFragment: HomeFragment
+    private lateinit var rankingsFragment: RankingsFragment
+    private lateinit var analyticsFragment: AnalyticsFragment
+    private lateinit var settingsFragment: SettingsFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main_activity)
 
-        viewPager2 = findViewById(R.id.viewpager)
-        tabLayout = findViewById(R.id.tabs)
+        bottomNavigationView = findViewById(R.id.bottom_navigation)
+        
+        // Initialize fragments
+        homeFragment = HomeFragment()
+        rankingsFragment = RankingsFragment()
+        analyticsFragment = AnalyticsFragment()
+        settingsFragment = SettingsFragment()
 
-        homePage = HomeFragment()
-        debtPage = DebtFragment()
-        analyticsPage = AnalyticsFragment()
-        settingsPage = SettingsFragment()
+        // Set default fragment
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, homeFragment)
+            .commit()
 
-
-        pages = ArrayList()
-        pages.add(homePage)
-        pages.add(debtPage)
-        pages.add(analyticsPage)
-        pages.add(settingsPage)
-
-
-        myMyFragmentStateAdapter = MyFragmentStateAdapter(this, pages)
-        viewPager2.adapter = myMyFragmentStateAdapter
-
-        val tabConfigurationStrategy =
-            TabLayoutMediator.TabConfigurationStrategy { tab, position ->
-                tab.text = tabNames[position]
+        // Handle bottom navigation item selection
+        bottomNavigationView.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_home -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, homeFragment)
+                        .commit()
+                    true
+                }
+                R.id.nav_rankings -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, rankingsFragment)
+                        .commit()
+                    true
+                }
+                R.id.nav_analytics -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, analyticsFragment)
+                        .commit()
+                    true
+                }
+                R.id.nav_settings -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, settingsFragment)
+                        .commit()
+                    true
+                }
+                else -> false
             }
-
-        val tabLayoutMediator = TabLayoutMediator(tabLayout, viewPager2, tabConfigurationStrategy)
-        tabLayoutMediator.attach()
+        }
     }
 }
