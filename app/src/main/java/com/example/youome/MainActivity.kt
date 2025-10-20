@@ -4,6 +4,10 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.example.youome.home.HomeFragment
+import com.example.youome.rankings.RankingsFragment
+import com.example.youome.analytics.AnalyticsFragment
+import com.example.youome.settings.SettingsFragment
 
 class MainActivity : AppCompatActivity() {
     private lateinit var bottomNavigationView: BottomNavigationView
