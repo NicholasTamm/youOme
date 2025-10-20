@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- Profile Section -->
+    <PreferenceCategory app:title="Profile" app:icon="@drawable/ic_profile">
+
+        <Preference
+            app:key="profile_settings"
+            app:title="Edit Profile"
+            app:summary="Change your display name, email, and phone number"/>
+
+    </PreferenceCategory>
+
+    <!-- App Settings Section -->
+    <PreferenceCategory app:title="App Settings" app:icon="@drawable/ic_app_settings">
+
+        <ListPreference
+            app:key="default_currency"
+            app:title="Default Currency"
+            app:summary="Choose your preferred currency"
+            app:entries="@array/currency_entries"
+            app:entryValues="@array/currency_values"
+            app:defaultValue="USD"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreferenceCompat
+            app:key="enable_notifications"
+            app:title="Enable Notifications"
+            app:summary="Receive notifications for expense updates"
+            app:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            app:key="theme_switch"
+            app:title="DarkMode"
+            app:summary="switch app appearance"
+            app:defaultValue="false" />
+
+
+    </PreferenceCategory>
+
+    <!-- Privacy &amp; Security Section -->
+    <PreferenceCategory app:title="Miscellaneous" app:icon="@drawable/ic_more">
+
+        <Preference
+            app:key="clear_cache"
+            app:title="Clear Data"
+            app:summary="Empty Database of all data" />
+
+        <Preference
+            app:key="logout"
+            app:title="Logout"
+            app:summary="Sign out of your account"/>
+
+    </PreferenceCategory>
+
+    <!-- About Section -->
+    <PreferenceCategory app:title="About" app:icon="@drawable/ic_info">
+
+        <Preference
+            app:key="app_version"
+            app:title="App Version"
+            app:summary="1.0.0"
+            app:selectable="false" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
