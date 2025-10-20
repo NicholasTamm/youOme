@@ -32,6 +32,5 @@ data class Expense(
     val updatedAt: Long = System.currentTimeMillis(),
     val category: String = "General",
     val currency: String = "USD",
-    val isDeleted: Boolean = false,
-    val receiptImageUrl: String? = null
+    val isDeleted: Boolean = false
 )
