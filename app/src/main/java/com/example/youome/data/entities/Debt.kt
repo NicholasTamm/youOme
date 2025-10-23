@@ -35,7 +35,5 @@ data class Debt(
     val creditorId: String,
     val amount: Double,
     val currency: String = "USD",
-    val lastUpdated: Long = System.currentTimeMillis(),
-    val isSettled: Boolean = false,
-    val settledAt: Long? = null
+    val isSettled: Boolean = false
 )

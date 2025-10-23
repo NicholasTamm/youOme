@@ -8,12 +8,14 @@ import kotlinx.coroutines.flow.Flow
 interface DebtDao {
     
     // QUERY operations
+    @Query("SELECT * FROM debts")
+    suspend fun getAllDebts(): List<Debt>
     
     @Query("""
         SELECT * FROM debts 
         WHERE (debtorId = :userId OR creditorId = :userId) 
         AND isSettled = 0 
-        ORDER BY lastUpdated DESC
+        ORDER BY amount DESC
     """)
     fun getAllUnsettledDebtsByUser(userId: String): Flow<List<Debt>>
     
@@ -23,7 +25,7 @@ interface DebtDao {
     @Query("SELECT * FROM debts WHERE groupId = :groupId AND isSettled = 1")
     suspend fun getCurrentSettledDebtsByGroup(groupId: String): List<Debt>
     
-    @Query("SELECT * FROM debts WHERE groupId = :groupId ORDER BY lastUpdated DESC")
+    @Query("SELECT * FROM debts WHERE groupId = :groupId ORDER BY amount DESC")
     fun getDebtsByGroup(groupId: String): Flow<List<Debt>>
     
     @Query("SELECT * FROM debts WHERE creditorId = :userId AND isSettled = 0")
@@ -38,19 +40,26 @@ interface DebtDao {
     @Query("SELECT SUM(amount) FROM debts WHERE debtorId = :userId AND isSettled = 0")
     suspend fun getTotalOwedAmount(userId: String): Double?
     
+    // Group-specific balance queries
+    @Query("SELECT SUM(amount) FROM debts WHERE creditorId = :userId AND groupId = :groupId AND isSettled = 0")
+    suspend fun getTotalOwedToAmountForGroup(userId: String, groupId: String): Double?
+    
+    @Query("SELECT SUM(amount) FROM debts WHERE debtorId = :userId AND groupId = :groupId AND isSettled = 0")
+    suspend fun getTotalOwedAmountForGroup(userId: String, groupId: String): Double?
+    
     // INSERT operations
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDebt(debt: Debt)
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDebts(debts: List<Debt>)
-    
+   
     // UPDATE operations
     @Update
     suspend fun updateDebt(debt: Debt)
     
-    @Query("UPDATE debts SET isSettled = 1, settledAt = :settledAt WHERE groupId = :groupId AND debtorId = :debtorId AND creditorId = :creditorId")
-    suspend fun settleDebt(groupId: String, debtorId: String, creditorId: String, settledAt: Long = System.currentTimeMillis())
+    @Query("UPDATE debts SET isSettled = 1 WHERE groupId = :groupId AND debtorId = :debtorId AND creditorId = :creditorId")
+    suspend fun settleDebt(groupId: String, debtorId: String, creditorId: String)
     
     // DELETE operations
     @Delete
@@ -61,4 +70,7 @@ interface DebtDao {
     
     @Query("DELETE FROM debts WHERE groupId = :groupId AND isSettled = 0")
     suspend fun deleteUnsettledDebtsByGroup(groupId: String)
+    
+    @Query("DELETE FROM debts")
+    suspend fun deleteAll()
 }

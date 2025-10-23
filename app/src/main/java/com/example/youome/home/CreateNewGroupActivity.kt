@@ -1,6 +1,7 @@
 package com.example.youome.home
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,6 +9,7 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.youome.R
@@ -26,10 +28,14 @@ class CreateNewGroupActivity : AppCompatActivity() {
     
     private val membersList = mutableListOf<String>()
     private lateinit var membersAdapter: MembersAdapter
+    private lateinit var homeViewModel: HomeViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_create_new_group)
+        
+        // Initialize ViewModel
+        homeViewModel = ViewModelProvider(this)[HomeViewModel::class.java]
         
         setupViews()
         setupCurrencyDropdown()
@@ -109,15 +115,15 @@ class CreateNewGroupActivity : AppCompatActivity() {
         
         val selectedCurrency = currencySpinner.selectedItem.toString()
         
-        // TODO: In a real app, you would:
-        // 1. Call the group repository to create the group
-        // 2. Add the current user as a member
-        // 3. Add all members from membersList
-        // 4. Navigate back to home or to group details
+        Log.d("CreateNewGroupActivity", "Creating group: $groupName with currency: $selectedCurrency")
+        Log.d("CreateNewGroupActivity", "Members: ${membersList.joinToString(", ")}")
         
-        Toast.makeText(this, "Group created: $groupName ($selectedCurrency) with ${membersList.size} members", Toast.LENGTH_LONG).show()
+        // Use ViewModel to create the group
+        homeViewModel.createGroup(groupName, selectedCurrency, membersList)
         
-        // For now, just finish the activity
+        Toast.makeText(this, "Group '$groupName' created successfully!", Toast.LENGTH_LONG).show()
+        
+        // Finish the activity and return to home
         finish()
     }
 

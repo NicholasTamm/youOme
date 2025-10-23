@@ -3,22 +3,24 @@
     
     <!-- Currency arrays for preferences -->
     <string-array name="currency_entries">
+        <item>Canadian Dollar (CAD)</item>
         <item>US Dollar (USD)</item>
         <item>Euro (EUR)</item>
         <item>British Pound (GBP)</item>
-        <item>Japanese Yen (JPY)</item>
-        <item>Canadian Dollar (CAD)</item>
         <item>Australian Dollar (AUD)</item>
+        <item>Chinese Yuan(CNY)</item>
+        <item>Japanese Yen (JPY)</item>
         <item>Swiss Franc (CHF)</item>
     </string-array>
     
     <string-array name="currency_values">
+        <item>CAD</item>
         <item>USD</item>
         <item>EUR</item>
         <item>GBP</item>
-        <item>JPY</item>
-        <item>CAD</item>
         <item>AUD</item>
+        <item>CNY</item>
+        <item>JPY</item>
         <item>CHF</item>
     </string-array>
     
@@ -34,12 +36,13 @@
     
     <!-- Currencies for groups -->
     <string-array name="currencies">
+        <item>CAD</item>
         <item>USD</item>
         <item>EUR</item>
         <item>GBP</item>
-        <item>JPY</item>
-        <item>CAD</item>
         <item>AUD</item>
+        <item>CNY</item>
+        <item>JPY</item>
         <item>CHF</item>
     </string-array>
 </resources>

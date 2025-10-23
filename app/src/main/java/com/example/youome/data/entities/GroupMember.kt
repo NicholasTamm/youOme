@@ -25,8 +25,5 @@ import androidx.room.Index
 )
 data class GroupMember(
     val groupId: String,
-    val userId: String,
-    val joinedAt: Long = System.currentTimeMillis(),
-    val isActive: Boolean = true,
-    val role: String = "member"
+    val userId: String
 )

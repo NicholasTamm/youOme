@@ -7,11 +7,7 @@ import androidx.room.PrimaryKey
 data class User(
     @PrimaryKey(autoGenerate = false)
     val userId: String,
-    val username: String,
-    val email: String,
     val displayName: String,
-    val phoneNumber: String? = null,
-    val profileImageUrl: String? = null,
-    val createdAt: Long = System.currentTimeMillis(),
+    val email: String? = null,
     val isCurrentUser: Boolean = false
 )

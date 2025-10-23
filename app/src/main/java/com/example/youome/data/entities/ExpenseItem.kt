@@ -25,6 +25,5 @@ data class ExpenseItem(
     val expenseId: String,
     val userId: String,
     val amount: Double,
-    val isSettled: Boolean = false,
-    val settledAt: Long? = null
+    val isSettled: Boolean = false
 )

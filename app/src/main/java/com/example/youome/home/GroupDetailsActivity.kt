@@ -2,8 +2,11 @@ package com.example.youome.home
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.youome.R
@@ -18,15 +21,31 @@ class GroupDetailsActivity : AppCompatActivity() {
     private lateinit var expensesRecyclerView: RecyclerView
     private lateinit var addExpenseButton: MaterialButton
     private lateinit var expenseAdapter: ExpenseAdapter
+    private lateinit var groupDetailsViewModel: GroupDetailsViewModel
+    
+    private var groupId: String = ""
+    private var groupName: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_group_details)
 
+        // Initialize ViewModel
+        groupDetailsViewModel = ViewModelProvider(this)[GroupDetailsViewModel::class.java]
+
         setupViews()
         setupRecyclerView()
         setupClickListeners()
         loadGroupData()
+        observeViewModel()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh data when returning from other activities
+        if (::groupDetailsViewModel.isInitialized && groupId.isNotEmpty()) {
+            groupDetailsViewModel.loadGroupData(groupId)
+        }
     }
 
 
@@ -43,18 +62,6 @@ class GroupDetailsActivity : AppCompatActivity() {
         }
     }
 
-    private fun addExpense() {
-        // Navigate to create new expense screen with group information
-        val groupId = intent.getStringExtra("group_id") ?: "1"
-        val groupName = intent.getStringExtra("group_name") ?: "Unknown Group"
-        
-        val expenseIntent = Intent(this, CreateNewExpenseActivity::class.java).apply {
-            putExtra("group_id", groupId)
-            putExtra("group_name", groupName)
-        }
-        startActivity(expenseIntent)
-    }
-
     private fun setupRecyclerView() {
         expenseAdapter = ExpenseAdapter(emptyList())
         
@@ -66,99 +73,34 @@ class GroupDetailsActivity : AppCompatActivity() {
 
     private fun loadGroupData() {
         // Get group data from intent
-        val groupName = intent.getStringExtra("group_name") ?: "Unknown Group"
-        val groupId = intent.getStringExtra("group_id") ?: "1"
+        groupName = intent.getStringExtra("group_name") ?: "Unknown Group"
+        groupId = intent.getStringExtra("group_id") ?: "1"
         
         groupNameText.text = groupName
         
-        // Load sample expenses for this group
-        val sampleExpenses = getSampleExpenses(groupId)
-        expenseAdapter = ExpenseAdapter(sampleExpenses)
-        expensesRecyclerView.adapter = expenseAdapter
-        
-        // Calculate and display payment summary
-        val paymentSummary = calculatePaymentSummary(sampleExpenses)
-        paymentSummaryText.text = paymentSummary
+        // Load data using ViewModel
+        groupDetailsViewModel.loadGroupData(groupId)
     }
 
-    private fun getSampleExpenses(groupId: String): List<ExpenseUiModel> {
-        return listOf(
-            ExpenseUiModel(
-                id = "1",
-                description = "Dinner at Restaurant",
-                amount = 45.50,
-                currency = "$",
-                paidBy = "John Doe",
-                splitBetween = listOf("John Doe", "Jane Smith", "Mike Johnson"),
-                category = "Food",
-                createdAt = "Dec 15, 2024",
-                groupId = groupId
-            ),
-            ExpenseUiModel(
-                id = "2",
-                description = "Gas for Road Trip",
-                amount = 32.00,
-                currency = "$",
-                paidBy = "Jane Smith",
-                splitBetween = listOf("John Doe", "Jane Smith", "Mike Johnson", "Sarah Wilson"),
-                category = "Travel",
-                createdAt = "Dec 14, 2024",
-                groupId = groupId
-            ),
-            ExpenseUiModel(
-                id = "3",
-                description = "Hotel Room",
-                amount = 120.00,
-                currency = "$",
-                paidBy = "Mike Johnson",
-                splitBetween = listOf("John Doe", "Jane Smith", "Mike Johnson"),
-                category = "Travel",
-                createdAt = "Dec 13, 2024",
-                groupId = groupId
-            ),
-            ExpenseUiModel(
-                id = "4",
-                description = "Groceries",
-                amount = 28.75,
-                currency = "$",
-                paidBy = "Sarah Wilson",
-                splitBetween = listOf("John Doe", "Jane Smith", "Mike Johnson", "Sarah Wilson"),
-                category = "Food",
-                createdAt = "Dec 12, 2024",
-                groupId = groupId
-            )
-        )
+    private fun observeViewModel() {
+        // Observe expenses
+        groupDetailsViewModel.expenses.observe(this, Observer { expenses ->
+            expenseAdapter = ExpenseAdapter(expenses)
+            expensesRecyclerView.adapter = expenseAdapter
+        })
+
+        // Observe payment summary
+        groupDetailsViewModel.paymentSummary.observe(this, Observer { summary ->
+            paymentSummaryText.text = summary
+        })
     }
 
-    private fun calculatePaymentSummary(expenses: List<ExpenseUiModel>): String {
-        // TODO: Replace with actual user name from user data/preferences
-        val currentUser = "John Doe"
-        
-        var totalOwed = 0.0
-        var totalOwing = 0.0
-        
-        expenses.forEach { expense ->
-            val splitAmount = expense.amount / expense.splitBetween.size
-            
-            if (expense.paidBy == currentUser) {
-                // Current user paid, others owe them
-                totalOwed += expense.amount - splitAmount
-            } else if (expense.splitBetween.contains(currentUser)) {
-                // Current user is part of split, owes the payer
-                totalOwing += splitAmount
-            }
+    private fun addExpense() {
+        // Navigate to create new expense screen with group information
+        val expenseIntent = Intent(this, CreateNewExpenseActivity::class.java).apply {
+            putExtra("group_id", groupId)
+            putExtra("group_name", groupName)
         }
-        
-        return when {
-            totalOwed > totalOwing -> {
-                val netAmount = totalOwed - totalOwing
-                "Others owe you: $${String.format("%.2f", netAmount)}"
-            }
-            totalOwing > totalOwed -> {
-                val netAmount = totalOwing - totalOwed
-                "You owe others: $${String.format("%.2f", netAmount)}"
-            }
-            else -> "All settled up!"
-        }
+        startActivity(expenseIntent)
     }
 }

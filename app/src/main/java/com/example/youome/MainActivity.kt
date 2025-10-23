@@ -1,13 +1,17 @@
 package com.example.youome
 
 import android.os.Bundle
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import com.example.youome.data.database.YouOmeDatabase
+import com.example.youome.data.utils.DatabasePopulator
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.example.youome.home.HomeFragment
 import com.example.youome.rankings.RankingsFragment
 import com.example.youome.analytics.AnalyticsFragment
 import com.example.youome.settings.SettingsFragment
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var bottomNavigationView: BottomNavigationView
@@ -19,6 +23,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.main_activity)
+
+        // Set up database with test data and current user
+        setupDatabase()
 
         bottomNavigationView = findViewById(R.id.bottom_navigation)
         
@@ -61,6 +68,29 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 else -> false
+            }
+        }
+    }
+    
+    private fun setupDatabase() {
+        lifecycleScope.launch {
+            try {
+                Log.d("MainActivity", "Getting database instance...")
+                val database = YouOmeDatabase.getDatabase(this@MainActivity)
+                Log.d("MainActivity", "Database instance obtained: ${database != null}")
+                
+                // Always populate the database (force refresh)
+                Log.d("MainActivity", "Force populating database with fresh data")
+                DatabasePopulator.seedDatabase(database)
+                
+                // Verify final state
+                val userDao = database.userDao()
+                val currentUserAfterSeed = userDao.getCurrentUser()
+                Log.d("MainActivity", "Current user after seed: ${currentUserAfterSeed?.displayName ?: "null"}")
+                
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to setup database: ${e.message}")
+                e.printStackTrace()
             }
         }
     }

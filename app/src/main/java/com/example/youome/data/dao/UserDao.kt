@@ -17,6 +17,10 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
     suspend fun getUserByEmail(email: String): User?
     
+    
+    @Query("SELECT * FROM users WHERE displayName = :displayName")
+    suspend fun getUsersByDisplayName(displayName: String): List<User>
+    
     @Query("SELECT * FROM users WHERE userId = :userId")
     suspend fun getUserById(userId: String): User?
     
@@ -37,4 +41,7 @@ interface UserDao {
     
     @Query("DELETE FROM users WHERE userId = :userId")
     suspend fun deleteUserById(userId: String)
+    
+    @Query("DELETE FROM users")
+    suspend fun deleteAll()
 }

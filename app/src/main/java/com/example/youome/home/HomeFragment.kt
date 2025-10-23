@@ -2,14 +2,19 @@ package com.example.youome.home
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.youome.R
+import com.example.youome.data.model.BalanceSummaryModel
 import com.example.youome.data.model.GroupUiModel
+import com.example.youome.data.utils.CurrencyUtils
 import java.util.Calendar
 
 class HomeFragment : Fragment() {
@@ -17,6 +22,13 @@ class HomeFragment : Fragment() {
     private lateinit var groupAdapter: GroupAdapter
     private lateinit var homeRecyclerViewItems: MutableList<HomeRecyclerViewItems>
     private lateinit var greetingText: TextView
+    
+    // Balance Summary TextViews
+    private lateinit var balanceAmountText: TextView
+    private lateinit var significantGroupNameText: TextView
+    
+    // Simple ViewModel with LiveData
+    private val viewModel: HomeViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -27,9 +39,17 @@ class HomeFragment : Fragment() {
         
         setupRecyclerView(view)
         setupGreeting(view)
-        setupSampleData()
+        setupBalanceSummary(view)
+        setupGroups()
         
         return view
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh data when returning from other activities
+        viewModel.refreshBalance()
+        viewModel.refreshGroups()
     }
 
     private fun setupRecyclerView(view: View) {
@@ -62,69 +82,50 @@ class HomeFragment : Fragment() {
             else -> "Good night"
         }
         
-        // TODO: Replace "John" with actual user name from user data/preferences
-        val userName = "John"
-        greetingText.text = "$greeting, $userName!"
+        // Observe current user from ViewModel using LiveData
+        viewModel.currentUser.observe(viewLifecycleOwner, Observer { user ->
+            val userName = user?.displayName ?: "User"
+            greetingText.text = "$greeting, $userName!"
+        })
     }
 
-    private fun setupSampleData() {
-        // Add some sample groups for demonstration
-        val sampleGroups = listOf(
-            GroupUiModel(
-                id = "1",
-                name = "Weekend Trip",
-                debtSummary = "Others owe Me: $25.50",
-                memberCount = 4,
-                debtAmount = 25.50,
-                isOwed = true
-            ),
-            GroupUiModel(
-                id = "2", 
-                name = "Dinner with Friends",
-                debtSummary = "You owe: $15.75",
-                memberCount = 6,
-                debtAmount = 15.75,
-                isOwed = false
-            ),
-            GroupUiModel(
-                id = "3",
-                name = "Office Lunch",
-                debtSummary = "Others owe Me: $8.25",
-                memberCount = 8,
-                debtAmount = 8.25,
-                isOwed = true
-            ),
-            GroupUiModel(
-                id = "4",
-                name = "Movie Night",
-                debtSummary = "Settled",
-                memberCount = 3,
-                debtAmount = 0.0,
-                isOwed = true
-            ),
-            GroupUiModel(
-                id = "4",
-                name = "Movie Night",
-                debtSummary = "Settled",
-                memberCount = 3,
-                debtAmount = 0.0,
-                isOwed = true
-            ),
-            GroupUiModel(
-                id = "4",
-                name = "Movie Night",
-                debtSummary = "Settled",
-                memberCount = 3,
-                debtAmount = 0.0,
-                isOwed = true
-            ),
-        )
+    private fun setupBalanceSummary(view: View) {
+        // Find the balance summary TextViews
+        balanceAmountText = view.findViewById(R.id.balance_amount)
+        significantGroupNameText = view.findViewById(R.id.significant_group_name)
         
-        // Convert groups to HomeRecyclerViewItems.GroupItem and add create group item
-        homeRecyclerViewItems.addAll(sampleGroups.map { HomeRecyclerViewItems.GroupItem(it) })
-        homeRecyclerViewItems.add(HomeRecyclerViewItems.CreateGroupItem)
-        
-        groupAdapter.notifyDataSetChanged()
+        // Observe balance summary from ViewModel using LiveData
+        viewModel.balanceSummaryModel.observe(viewLifecycleOwner, Observer { balanceSummary ->
+            balanceSummary?.let { balance ->
+                // Update main balance amount
+                val balanceText = if (balance.isSettled) {
+                    "All Settled!"
+                } else {
+                    CurrencyUtils.formatAmount(balance.totalBalance, balance.currency)
+                }
+                balanceAmountText.text = balanceText
+                
+                // Update significant group name
+                significantGroupNameText.text = balance.mostSignificantGroup
+            }
+        })
+    }
+
+    private fun setupGroups() {
+        // Observe groups from ViewModel using LiveData
+        viewModel.groups.observe(viewLifecycleOwner, Observer { groups ->
+            // Clear existing items
+            homeRecyclerViewItems.clear()
+            
+            // Add groups from database
+            homeRecyclerViewItems.addAll(groups.map { HomeRecyclerViewItems.GroupItem(it) })
+            
+            // Add create group item at the end
+            homeRecyclerViewItems.add(HomeRecyclerViewItems.CreateGroupItem)
+            
+            // Notify adapter of changes
+            groupAdapter.notifyDataSetChanged()
+        })
     }
 
     private fun onGroupClick(group: GroupUiModel) {

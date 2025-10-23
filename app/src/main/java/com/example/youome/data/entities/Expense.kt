@@ -28,9 +28,8 @@ data class Expense(
     val description: String,
     val amount: Double,
     val paidBy: String,
-    val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis(),
+    val splitBy: String, // Who the expense is split between (comma-separated user IDs or "ALL")
     val category: String = "General",
     val currency: String = "USD",
-    val isDeleted: Boolean = false
+    val createdAt: Long = System.currentTimeMillis()
 )

@@ -67,52 +67,28 @@
                     app:layout_constraintTop_toBottomOf="@id/balance_title" />
 
                 <TextView
-                    android:id="@+id/you_owe_label"
+                    android:id="@+id/significant_group_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:alpha="0.7"
-                    android:text="You Owe:"
+                    android:text="Group with most significant debt:"
                     android:textColor="@android:color/white"
                     android:textSize="14sp"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/balance_amount" />
 
                 <TextView
-                    android:id="@+id/you_owe_amount"
+                    android:id="@+id/significant_group_name"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="$0.00"
+                    android:text="No Groups"
                     android:textColor="@android:color/white"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/you_owe_label" />
-
-                <TextView
-                    android:id="@+id/others_owe_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:alpha="0.7"
-                    android:text="Others Owe You:"
-                    android:textColor="@android:color/white"
-                    android:textSize="14sp"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/you_owe_amount" />
-
-                <TextView
-                    android:id="@+id/others_owe_amount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="$0.00"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/others_owe_label" />
+                    app:layout_constraintTop_toBottomOf="@id/significant_group_label" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 

@@ -9,7 +9,7 @@ import com.example.youome.R
 import com.example.youome.data.model.ExpenseUiModel
 
 class ExpenseAdapter(
-    private val expenses: List<ExpenseUiModel>
+    val expenses: List<ExpenseUiModel>
 ) : RecyclerView.Adapter<ExpenseAdapter.ExpenseViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ExpenseViewHolder {
@@ -28,6 +28,7 @@ class ExpenseAdapter(
     class ExpenseViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val descriptionText: TextView = itemView.findViewById(R.id.expense_description)
         private val amountText: TextView = itemView.findViewById(R.id.expense_amount)
+        private val yourShareAmount: TextView = itemView.findViewById(R.id.your_share_amount)
         private val paidByValue: TextView = itemView.findViewById(R.id.paid_by_value)
         private val splitBetweenValue: TextView = itemView.findViewById(R.id.split_between_value)
         private val categoryValue: TextView = itemView.findViewById(R.id.category_value)
@@ -40,6 +41,26 @@ class ExpenseAdapter(
             splitBetweenValue.text = expense.splitBetween.joinToString(", ")
             categoryValue.text = expense.category
             dateText.text = expense.createdAt
+            
+            // Display pre-calculated user share
+            displayUserShare(expense.userShare, expense.currency)
+        }
+        
+        private fun displayUserShare(userShare: Double, currency: String) {
+            when {
+                userShare > 0.01 -> {
+                    yourShareAmount.text = "+${currency}${String.format("%.2f", userShare)}"
+                    yourShareAmount.setTextColor(itemView.context.getColor(R.color.green))
+                }
+                userShare < -0.01 -> {
+                    yourShareAmount.text = "${currency}${String.format("%.2f", userShare)}"
+                    yourShareAmount.setTextColor(itemView.context.getColor(R.color.red))
+                }
+                else -> {
+                    yourShareAmount.text = "${currency}0.00"
+                    yourShareAmount.setTextColor(itemView.context.getColor(R.color.dark_gray))
+                }
+            }
         }
     }
 }

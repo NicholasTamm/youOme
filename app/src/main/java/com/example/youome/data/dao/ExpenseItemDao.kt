@@ -26,6 +26,9 @@ interface ExpenseItemDao {
     @Query("SELECT SUM(amount) FROM expense_items WHERE userId = :userId AND isSettled = 0")
     suspend fun getTotalUnsettledAmountByUser(userId: String): Double?
     
+    @Query("SELECT * FROM expense_items WHERE expenseId = :expenseId AND userId = :userId")
+    suspend fun getExpenseItem(expenseId: String, userId: String): ExpenseItem?
+    
     // INSERT operations
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExpenseItem(expenseItem: ExpenseItem)
@@ -37,10 +40,16 @@ interface ExpenseItemDao {
     @Update
     suspend fun updateExpenseItem(expenseItem: ExpenseItem)
     
-    @Query("UPDATE expense_items SET isSettled = 1, settledAt = :settledAt WHERE expenseId = :expenseId AND userId = :userId")
-    suspend fun markExpenseItemAsSettled(expenseId: String, userId: String, settledAt: Long = System.currentTimeMillis())
+    @Query("UPDATE expense_items SET isSettled = 1 WHERE expenseId = :expenseId AND userId = :userId")
+    suspend fun markExpenseItemAsSettled(expenseId: String, userId: String)
     
     // DELETE operations
     @Delete
     suspend fun deleteExpenseItem(expenseItem: ExpenseItem)
+    
+    @Query("DELETE FROM expense_items WHERE expenseId = :expenseId")
+    suspend fun deleteExpenseItemsByExpense(expenseId: String)
+    
+    @Query("DELETE FROM expense_items")
+    suspend fun deleteAll()
 }

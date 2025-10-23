@@ -1,11 +1,15 @@
 package com.example.youome.home
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.Observer
 import com.example.youome.R
+import com.example.youome.data.entities.User
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 
@@ -17,16 +21,30 @@ class CreateNewExpenseActivity : AppCompatActivity() {
     private lateinit var paidBySpinner: Spinner
     private lateinit var splitBetweenSpinner: Spinner
     private lateinit var createExpenseButton: MaterialButton
+    private lateinit var groupDetailsViewModel: GroupDetailsViewModel
+    
+    private var groupId: String = ""
+    private var groupName: String = ""
+    private var groupMembers: List<User> = emptyList()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_create_new_expense)
         
+        // Initialize ViewModel
+        groupDetailsViewModel = ViewModelProvider(this)[GroupDetailsViewModel::class.java]
+        
+        // Get group data from intent
+        groupId = intent.getStringExtra("group_id") ?: "1"
+        groupName = intent.getStringExtra("group_name") ?: "Unknown Group"
+        
         setupViews()
         setupCategoryDropdown()
-        setupPaidByDropdown()
-        setupSplitBetweenDropdown()
+        observeViewModel()
         setupClickListeners()
+        
+        // Load group members
+        groupDetailsViewModel.loadGroupData(groupId)
     }
 
     private fun setupViews() {
@@ -46,30 +64,37 @@ class CreateNewExpenseActivity : AppCompatActivity() {
         categorySpinner.setSelection(5) // Set "Other" as default
     }
 
+    private fun observeViewModel() {
+        // Observe group members
+        groupDetailsViewModel.groupMembers.observe(this, Observer { members ->
+            Log.d("CreateNewExpenseActivity", "Received ${members.size} group members")
+            groupMembers = members
+            setupPaidByDropdown()
+            setupSplitBetweenDropdown()
+        })
+    }
+
     private fun setupPaidByDropdown() {
-        // For now, use sample users. In a real app, you'd fetch from database
-        val sampleUsers = listOf(
-            "John Doe",
-            "Jane Smith", 
-            "Mike Johnson",
-            "Sarah Wilson"
-        )
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, sampleUsers)
+        if (groupMembers.isEmpty()) {
+            Log.w("CreateNewExpenseActivity", "No group members available yet")
+            return
+        }
+        
+        val memberNames = groupMembers.map { it.displayName }
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, memberNames)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         paidBySpinner.adapter = adapter
-        paidBySpinner.setSelection(0) // Set first user as default
+        paidBySpinner.setSelection(0) // Set first member as default
     }
 
     private fun setupSplitBetweenDropdown() {
-        // For now, use sample users. In a real app, you'd fetch from database
-        val sampleUsers = listOf(
-            "All Members",
-            "John Doe",
-            "Jane Smith", 
-            "Mike Johnson",
-            "Sarah Wilson"
-        )
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, sampleUsers)
+        if (groupMembers.isEmpty()) {
+            Log.w("CreateNewExpenseActivity", "No group members available yet")
+            return
+        }
+        
+        val splitOptions = listOf("All Members") + groupMembers.map { it.displayName }
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, splitOptions)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         splitBetweenSpinner.adapter = adapter
         splitBetweenSpinner.setSelection(0) // Set "All Members" as default
@@ -107,22 +132,50 @@ class CreateNewExpenseActivity : AppCompatActivity() {
             return
         }
         
+        if (groupMembers.isEmpty()) {
+            Toast.makeText(this, "Group members not loaded yet. Please try again.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
         // Get selected values
-        val selectedGroupId = intent.getStringExtra("group_id") ?: "1"
-        val selectedGroupName = intent.getStringExtra("group_name") ?: "Unknown Group"
         val selectedCategory = categorySpinner.selectedItem.toString()
         val selectedPaidBy = paidBySpinner.selectedItem.toString()
-        val selectedSplitBetween = if (splitBetweenSpinner.selectedItem.toString() == "All Members") "ALL" else splitBetweenSpinner.selectedItem.toString()
+        val selectedSplitBetween = splitBetweenSpinner.selectedItem.toString()
         
-        // TODO: In a real app, you would:
-        // 1. Use the selectedGroupId to create the expense
-        // 2. Get the actual user ID from the selectedPaidBy
-        // 3. Get actual user IDs from the selectedSplitBetween
-        // 4. Call the expense repository to create the expense
+        // Find user IDs
+        val paidByUser = groupMembers.find { it.displayName == selectedPaidBy }
+        if (paidByUser == null) {
+            Toast.makeText(this, "Selected payer not found", Toast.LENGTH_SHORT).show()
+            return
+        }
         
-        Toast.makeText(this, "Expense created for $selectedGroupName: $description - $amount\nPaid by: $selectedPaidBy\nSplit between: $selectedSplitBetween", Toast.LENGTH_LONG).show()
+        val splitByUserIds = if (selectedSplitBetween == "All Members") {
+            groupMembers.map { it.userId }
+        } else {
+            val splitByUser = groupMembers.find { it.displayName == selectedSplitBetween }
+            if (splitByUser == null) {
+                Toast.makeText(this, "Selected split member not found", Toast.LENGTH_SHORT).show()
+                return
+            }
+            listOf(splitByUser.userId)
+        }
         
-        // For now, just finish the activity
+        Log.d("CreateNewExpenseActivity", "Creating expense: $description for group: $groupName")
+        Log.d("CreateNewExpenseActivity", "Paid by: $selectedPaidBy, Split between: $selectedSplitBetween")
+        
+        // Use ViewModel to create the expense
+        groupDetailsViewModel.createExpense(
+            groupId = groupId,
+            description = description,
+            amount = amount,
+            category = selectedCategory,
+            paidByUserId = paidByUser.userId,
+            splitByUserIds = splitByUserIds
+        )
+        
+        Toast.makeText(this, "Expense '$description' created successfully!", Toast.LENGTH_LONG).show()
+        
+        // Finish the activity and return to group details
         finish()
     }
 }
