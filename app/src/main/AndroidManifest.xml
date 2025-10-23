@@ -21,6 +21,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+                <activity
+                    android:name=".home.CreateNewExpenseActivity"
+                    android:exported="false"
+                    android:theme="@style/Theme.YouOme" />
+                <activity
+                    android:name=".home.CreateNewGroupActivity"
+                    android:exported="false"
+                    android:theme="@style/Theme.YouOme" />
+                <activity
+                    android:name=".home.GroupDetailsActivity"
+                    android:exported="false"
+                    android:theme="@style/Theme.YouOme" />
     </application>
 
 </manifest>

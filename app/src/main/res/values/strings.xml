@@ -21,4 +21,25 @@
         <item>AUD</item>
         <item>CHF</item>
     </string-array>
+    
+    <!-- Categories for groups -->
+    <string-array name="categories">
+        <item>Travel</item>
+        <item>Food \&amp; Dining</item>
+        <item>Entertainment</item>
+        <item>Shopping</item>
+        <item>Social</item>
+        <item>Other</item>
+    </string-array>
+    
+    <!-- Currencies for groups -->
+    <string-array name="currencies">
+        <item>USD</item>
+        <item>EUR</item>
+        <item>GBP</item>
+        <item>JPY</item>
+        <item>CAD</item>
+        <item>AUD</item>
+        <item>CHF</item>
+    </string-array>
 </resources>
