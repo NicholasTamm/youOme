@@ -8,8 +8,11 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.Observer
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.youome.R
 import com.example.youome.data.entities.User
+import com.example.youome.rankings.MemberSelectionAdapter
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 
@@ -19,8 +22,10 @@ class CreateNewExpenseActivity : AppCompatActivity() {
     private lateinit var amountInput: TextInputEditText
     private lateinit var categorySpinner: Spinner
     private lateinit var paidBySpinner: Spinner
-    private lateinit var splitBetweenSpinner: Spinner
+    private lateinit var membersSelectionRecycler: RecyclerView
+    private lateinit var selectAllButton: MaterialButton
     private lateinit var createExpenseButton: MaterialButton
+    private lateinit var memberSelectionAdapter: MemberSelectionAdapter
     private lateinit var groupDetailsViewModel: GroupDetailsViewModel
     
     private var groupId: String = ""
@@ -52,7 +57,8 @@ class CreateNewExpenseActivity : AppCompatActivity() {
         amountInput = findViewById(R.id.amount_input)
         categorySpinner = findViewById(R.id.category_spinner)
         paidBySpinner = findViewById(R.id.paid_by_spinner)
-        splitBetweenSpinner = findViewById(R.id.split_between_spinner)
+        membersSelectionRecycler = findViewById(R.id.members_selection_recycler)
+        selectAllButton = findViewById(R.id.select_all_button)
         createExpenseButton = findViewById(R.id.create_group_button) // Keep same ID for now
     }
 
@@ -67,10 +73,9 @@ class CreateNewExpenseActivity : AppCompatActivity() {
     private fun observeViewModel() {
         // Observe group members
         groupDetailsViewModel.groupMembers.observe(this, Observer { members ->
-            Log.d("CreateNewExpenseActivity", "Received ${members.size} group members")
             groupMembers = members
             setupPaidByDropdown()
-            setupSplitBetweenDropdown()
+            setupMemberSelection()
         })
     }
 
@@ -87,22 +92,32 @@ class CreateNewExpenseActivity : AppCompatActivity() {
         paidBySpinner.setSelection(0) // Set first member as default
     }
 
-    private fun setupSplitBetweenDropdown() {
+    private fun setupMemberSelection() {
         if (groupMembers.isEmpty()) {
-            Log.w("CreateNewExpenseActivity", "No group members available yet")
             return
         }
         
-        val splitOptions = listOf("All Members") + groupMembers.map { it.displayName }
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, splitOptions)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        splitBetweenSpinner.adapter = adapter
-        splitBetweenSpinner.setSelection(0) // Set "All Members" as default
+        memberSelectionAdapter = MemberSelectionAdapter(groupMembers) { selectedUserIds ->
+            // Handle selection change if needed
+            Log.d("CreateNewExpenseActivity", "Selected members: ${selectedUserIds.size}")
+        }
+        
+        membersSelectionRecycler.apply {
+            layoutManager = LinearLayoutManager(this@CreateNewExpenseActivity)
+            adapter = memberSelectionAdapter
+        }
+        
+        // Select all members by default
+        memberSelectionAdapter.selectAll()
     }
 
     private fun setupClickListeners() {
         createExpenseButton.setOnClickListener {
             createExpense()
+        }
+        
+        selectAllButton.setOnClickListener {
+            memberSelectionAdapter.selectAll()
         }
     }
 
@@ -140,7 +155,7 @@ class CreateNewExpenseActivity : AppCompatActivity() {
         // Get selected values
         val selectedCategory = categorySpinner.selectedItem.toString()
         val selectedPaidBy = paidBySpinner.selectedItem.toString()
-        val selectedSplitBetween = splitBetweenSpinner.selectedItem.toString()
+        val selectedSplitUserIds = memberSelectionAdapter.getSelectedMembers()
         
         // Find user IDs
         val paidByUser = groupMembers.find { it.displayName == selectedPaidBy }
@@ -149,19 +164,13 @@ class CreateNewExpenseActivity : AppCompatActivity() {
             return
         }
         
-        val splitByUserIds = if (selectedSplitBetween == "All Members") {
-            groupMembers.map { it.userId }
-        } else {
-            val splitByUser = groupMembers.find { it.displayName == selectedSplitBetween }
-            if (splitByUser == null) {
-                Toast.makeText(this, "Selected split member not found", Toast.LENGTH_SHORT).show()
-                return
-            }
-            listOf(splitByUser.userId)
+        if (selectedSplitUserIds.isEmpty()) {
+            Toast.makeText(this, "Please select at least one person to split with", Toast.LENGTH_SHORT).show()
+            return
         }
         
         Log.d("CreateNewExpenseActivity", "Creating expense: $description for group: $groupName")
-        Log.d("CreateNewExpenseActivity", "Paid by: $selectedPaidBy, Split between: $selectedSplitBetween")
+        Log.d("CreateNewExpenseActivity", "Paid by: $selectedPaidBy, Split between: ${selectedSplitUserIds.size} members")
         
         // Use ViewModel to create the expense
         groupDetailsViewModel.createExpense(
@@ -170,7 +179,7 @@ class CreateNewExpenseActivity : AppCompatActivity() {
             amount = amount,
             category = selectedCategory,
             paidByUserId = paidByUser.userId,
-            splitByUserIds = splitByUserIds
+            splitByUserIds = selectedSplitUserIds
         )
         
         Toast.makeText(this, "Expense '$description' created successfully!", Toast.LENGTH_LONG).show()

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    app:cardBackgroundColor="@color/light_gray"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <!-- Rank -->
+        <TextView
+            android:id="@+id/ranking_rank"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="4th"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginEnd="16dp"
+            android:minWidth="40dp" />
+
+        <!-- Name -->
+        <TextView
+            android:id="@+id/ranking_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="User Name"
+            android:textSize="16sp"
+            android:textColor="@android:color/black" />
+
+        <!-- Amount -->
+        <TextView
+            android:id="@+id/ranking_amount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="$0.00"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="@color/red" />
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
+

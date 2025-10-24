@@ -86,7 +86,7 @@ class CreateNewGroupActivity : AppCompatActivity() {
         val memberText = memberInput.text.toString().trim()
         
         if (memberText.isEmpty()) {
-            Toast.makeText(this, "Please enter a member email or phone", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Please enter a member name", Toast.LENGTH_SHORT).show()
             return
         }
         

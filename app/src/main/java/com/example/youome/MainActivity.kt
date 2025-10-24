@@ -8,15 +8,15 @@ import com.example.youome.data.database.YouOmeDatabase
 import com.example.youome.data.utils.DatabasePopulator
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.example.youome.home.HomeFragment
-import com.example.youome.rankings.RankingsFragment
 import com.example.youome.analytics.AnalyticsFragment
+import com.example.youome.rankings.RankingFragment
 import com.example.youome.settings.SettingsFragment
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var bottomNavigationView: BottomNavigationView
     private lateinit var homeFragment: HomeFragment
-    private lateinit var rankingsFragment: RankingsFragment
+    private lateinit var rankingFragment: RankingFragment
     private lateinit var analyticsFragment: AnalyticsFragment
     private lateinit var settingsFragment: SettingsFragment
 
@@ -31,7 +31,7 @@ class MainActivity : AppCompatActivity() {
         
         // Initialize fragments
         homeFragment = HomeFragment()
-        rankingsFragment = RankingsFragment()
+        rankingFragment = RankingFragment()
         analyticsFragment = AnalyticsFragment()
         settingsFragment = SettingsFragment()
 
@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 R.id.nav_rankings -> {
                     supportFragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, rankingsFragment)
+                        .replace(R.id.fragment_container, rankingFragment)
                         .commit()
                     true
                 }

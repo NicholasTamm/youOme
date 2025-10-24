@@ -47,6 +47,13 @@ interface DebtDao {
     @Query("SELECT SUM(amount) FROM debts WHERE debtorId = :userId AND groupId = :groupId AND isSettled = 0")
     suspend fun getTotalOwedAmountForGroup(userId: String, groupId: String): Double?
     
+    // Settled debt queries
+    @Query("SELECT SUM(amount) FROM debts WHERE creditorId = :userId AND groupId = :groupId AND isSettled = 1")
+    suspend fun getTotalSettledOwedToAmountForGroup(userId: String, groupId: String): Double?
+    
+    @Query("SELECT SUM(amount) FROM debts WHERE debtorId = :userId AND groupId = :groupId AND isSettled = 1")
+    suspend fun getTotalSettledOwedAmountForGroup(userId: String, groupId: String): Double?
+    
     // INSERT operations
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDebt(debt: Debt)

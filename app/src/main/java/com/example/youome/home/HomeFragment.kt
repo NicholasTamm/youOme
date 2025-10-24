@@ -27,8 +27,8 @@ class HomeFragment : Fragment() {
     private lateinit var balanceAmountText: TextView
     private lateinit var significantGroupNameText: TextView
     
-    // Simple ViewModel with LiveData
-    private val viewModel: HomeViewModel by viewModels()
+    // Simple ViewModel with LiveData - scoped to activity to persist across fragments
+    private val viewModel: HomeViewModel by viewModels({ requireActivity() })
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -47,7 +47,6 @@ class HomeFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // Refresh data when returning from other activities
         viewModel.refreshBalance()
         viewModel.refreshGroups()
     }
@@ -84,7 +83,7 @@ class HomeFragment : Fragment() {
         
         // Observe current user from ViewModel using LiveData
         viewModel.currentUser.observe(viewLifecycleOwner, Observer { user ->
-            val userName = user?.displayName ?: "User"
+            val userName = user?.displayName?.split(" ")?.first() ?: "User"
             greetingText.text = "$greeting, $userName!"
         })
     }
@@ -107,23 +106,19 @@ class HomeFragment : Fragment() {
                 
                 // Update significant group name
                 significantGroupNameText.text = balance.mostSignificantGroup
+            } ?: run {
+                // Handle null balance summary
+                balanceAmountText.text = "Loading..."
+                significantGroupNameText.text = "Loading..."
             }
         })
     }
 
     private fun setupGroups() {
-        // Observe groups from ViewModel using LiveData
         viewModel.groups.observe(viewLifecycleOwner, Observer { groups ->
-            // Clear existing items
             homeRecyclerViewItems.clear()
-            
-            // Add groups from database
             homeRecyclerViewItems.addAll(groups.map { HomeRecyclerViewItems.GroupItem(it) })
-            
-            // Add create group item at the end
             homeRecyclerViewItems.add(HomeRecyclerViewItems.CreateGroupItem)
-            
-            // Notify adapter of changes
             groupAdapter.notifyDataSetChanged()
         })
     }

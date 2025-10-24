@@ -13,8 +13,8 @@ object DatabasePopulator {
     private val testUsers = listOf(
         User(
             userId = "user1",
-            displayName = "John Smith",
-            email = "john@example.com",
+            displayName = "Nick Tam",
+            email = "nick@example.com",
             isCurrentUser = true
         ),
         User(

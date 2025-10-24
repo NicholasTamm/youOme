@@ -146,8 +146,8 @@
                     android:id="@+id/member_input"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Enter email or phone"
-                    android:inputType="textEmailAddress"
+                    android:hint="Enter member name"
+                    android:inputType="textCapWords"
                     android:maxLines="1" />
 
             </com.google.android.material.textfield.TextInputLayout>

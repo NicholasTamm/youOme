@@ -10,6 +10,7 @@ import com.example.youome.data.dao.ExpenseDao
 import com.example.youome.data.dao.UserDao
 import com.example.youome.data.dao.GroupDao
 import com.example.youome.data.dao.GroupMemberDao
+import com.example.youome.data.dao.DebtDao
 import com.example.youome.data.database.YouOmeDatabase
 import com.example.youome.data.entities.User
 import com.example.youome.data.entities.Group
@@ -27,6 +28,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val expenseDao: ExpenseDao = YouOmeDatabase.getDatabase(application).expenseDao()
     private val groupDao: GroupDao = YouOmeDatabase.getDatabase(application).groupDao()
     private val groupMemberDao: GroupMemberDao = YouOmeDatabase.getDatabase(application).groupMemberDao()
+    private val debtDao: DebtDao = YouOmeDatabase.getDatabase(application).debtDao()
 
     private val _currentUser = MutableLiveData<User?>()
     val currentUser: LiveData<User?> = _currentUser
@@ -62,10 +64,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Calculate Balance summary from DB for user
     private fun calculateBalanceForCurrentUser(currentUser: User?) {
         if (currentUser == null) {
-            Log.d("HomeViewModel", "No current user - setting balance to null")
             _balanceSummaryModel.postValue(null)
             return
         }
@@ -73,49 +73,30 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 val userId = currentUser.userId
-                Log.d("HomeViewModel", "Calculating balance for user: ${currentUser.displayName} (ID: $userId)")
+                val unsettledDebtsOwedToUser = debtDao.getTotalOwedToAmount(userId) ?: 0.0
+                val unsettledDebtsUserOwes = debtDao.getTotalOwedAmount(userId) ?: 0.0
+                val totalBalance = unsettledDebtsOwedToUser - unsettledDebtsUserOwes
                 
-                // Get ALL expenses (not just ones user paid) to calculate proper balance
-                val allExpenses = expenseDao.getAllExpenses()
-                
-                var totalOwedToYou = 0.0
-                var totalYouOwe = 0.0
-                
-                // Map to track debt per group for finding the most significant group
+                val allUnsettledDebts = debtDao.getAllUnsettledDebtsByUser(userId).first()
                 val groupDebts = mutableMapOf<String, Double>()
                 
-                
-                allExpenses.forEach { expense ->
-                    val splitMembers = expense.splitBy.split(",").map { it.trim() }
-                    val splitAmount = expense.amount / splitMembers.size
-                    
-                    // Initialize group debt if not exists
-                    if (!groupDebts.containsKey(expense.groupId)) {
-                        groupDebts[expense.groupId] = 0.0
+                allUnsettledDebts.forEach { debt ->
+                    val groupId = debt.groupId
+                    if (!groupDebts.containsKey(groupId)) {
+                        groupDebts[groupId] = 0.0
                     }
                     
-                    if (expense.paidBy == userId) {
-                        // Current user paid, others owe them
-                        val owedToUser = expense.amount - splitAmount
-                        totalOwedToYou += owedToUser
-                        groupDebts[expense.groupId] = groupDebts[expense.groupId]!! + owedToUser
-                    } else if (splitMembers.contains(userId)) {
-                        // Current user is part of split, owes the payer
-                        totalYouOwe += splitAmount
-                        groupDebts[expense.groupId] = groupDebts[expense.groupId]!! - splitAmount
+                    if (debt.creditorId == userId) {
+                        groupDebts[groupId] = groupDebts[groupId]!! + debt.amount
+                    } else if (debt.debtorId == userId) {
+                        groupDebts[groupId] = groupDebts[groupId]!! - debt.amount
                     }
                 }
                 
-                // Calculate net balance
-                val totalBalance = totalOwedToYou - totalYouOwe
-                
-                // Find the group with the largest absolute debt
                 val largestDebtGroup = groupDebts.maxByOrNull { abs(it.value) }
                 val largestDebtGroupId = largestDebtGroup?.key ?: ""
                 
-                // Get group name for display
                 val groupName = if (largestDebtGroupId.isNotEmpty()) {
-                    // Get group name from database
                     try {
                         val group = groupDao.getGroupById(largestDebtGroupId)
                         group?.name ?: "Unknown Group"
@@ -126,13 +107,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     "No Groups"
                 }
                 
-                Log.d("HomeViewModel", "Balance calculated: $totalBalance, Most significant group: $groupName")
-                
-                // Create balance summary with original calculation but store group name
                 val balanceSummary = BalanceSummaryModel(
                     totalBalance = totalBalance,
-                    totalOwedToYou = totalOwedToYou,
-                    totalYouOwe = totalYouOwe,
                     currency = "USD",
                     mostSignificantGroup = groupName
                 )
@@ -141,8 +117,6 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error calculating balance: ${e.message}")
-                e.printStackTrace()
-                // Handle error - set default balance
                 _balanceSummaryModel.postValue(BalanceSummaryModel())
             }
         }
@@ -155,41 +129,29 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private fun getGroups() {
         viewModelScope.launch {
             try {
-                // Get current user for debt calculations
                 val currentUser = userDao.getCurrentUser()
                 if (currentUser == null) {
                     _groups.postValue(emptyList())
                     return@launch
                 }
                 
-                // Get all groups from database
-                val allGroups = groupDao.getAllGroups()
-                
-                allGroups.collect { groups ->
-                    Log.d("HomeViewModel", "Found ${groups.size} groups in database")
-                    
-                    // Convert database groups to UI models with basic data first
-                    val groupUiModels = groups.map { group ->
-                        GroupUiModel(
-                            id = group.groupId,
-                            name = group.name,
-                            debtSummary = "Loading...", // Will be calculated separately
-                            memberCount = 0, // Will be calculated separately
-                            debtAmount = 0.0, // Will be calculated separately
-                            isOwed = false // Will be calculated separately
-                        )
-                    }
-                    
-                    Log.d("HomeViewModel", "Converted ${groupUiModels.size} groups to UI models with basic data")
-                    _groups.postValue(groupUiModels)
-                    
-                    // Now calculate detailed data in background
-                    calculateDetailedGroupData(groups, currentUser.userId)
+                val groups = groupDao.getAllGroups().first()
+                val groupUiModels = groups.map { group ->
+                    GroupUiModel(
+                        id = group.groupId,
+                        name = group.name,
+                        debtSummary = "Loading...",
+                        memberCount = 0,
+                        debtAmount = 0.0,
+                        isOwed = false
+                    )
                 }
+                
+                _groups.postValue(groupUiModels)
+                calculateDetailedGroupData(groups, currentUser.userId)
                 
             } catch (e: Exception) {
                 Log.e("HomeViewModel", "Error fetching groups: ${e.message}")
-                e.printStackTrace()
                 _groups.postValue(emptyList())
             }
         }
@@ -199,53 +161,47 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         getGroups()
     }
 
-    fun createGroup(groupName: String, currency: String, memberEmails: List<String>) {
+    fun createGroup(groupName: String, currency: String, memberNames: List<String>) {
         viewModelScope.launch {
             try {
-                // Get current user
                 val currentUser = userDao.getCurrentUser()
                 if (currentUser == null) {
                     return@launch
                 }
 
-                // Generate unique group ID
                 val groupId = "group_${UUID.randomUUID().toString().substring(0, 8)}"
-
-                // Create the group
                 val newGroup = Group(
                     groupId = groupId,
                     name = groupName,
                     currency = currency
                 )
 
-                // Insert the group
                 groupDao.insertGroup(newGroup)
-
-                // Create group members
                 val groupMembers = mutableListOf<GroupMember>()
-
-                // Add current user as a member
                 groupMembers.add(GroupMember(
                     groupId = groupId,
                     userId = currentUser.userId
                 ))
 
-                // Add other members (for now, we'll create placeholder users)
-                memberEmails.forEach { email ->
-                    // In a real app, you would look up users by email or create new users
-                    // For now, we'll create a placeholder user ID
+                val usersToCreate = mutableListOf<User>()
+                memberNames.forEach { memberName ->
                     val memberUserId = "user_${UUID.randomUUID().toString().substring(0, 8)}"
-
+                    val newUser = User(
+                        userId = memberUserId,
+                        displayName = memberName,
+                        email = null,
+                        isCurrentUser = false
+                    )
+                    
+                    usersToCreate.add(newUser)
                     groupMembers.add(GroupMember(
                         groupId = groupId,
                         userId = memberUserId
                     ))
                 }
-
-                // Insert all group members
+                
+                userDao.insertUsers(usersToCreate)
                 groupMemberDao.insertGroupMembers(groupMembers)
-
-                // Refresh groups to show the new group
                 refreshGroups()
 
             } catch (e: Exception) {
@@ -314,26 +270,12 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private suspend fun calculateGroupDebtSummary(groupId: String, currentUserId: String): Triple<String, Double, Boolean> {
         return try {
-            // Get all expenses for this group
-            val groupExpenses = expenseDao.getExpensesByGroup(groupId).first()
+            // Get unsettled debts for this group and user
+            val unsettledDebtsOwedToUser = debtDao.getTotalOwedToAmountForGroup(currentUserId, groupId) ?: 0.0
+            val unsettledDebtsUserOwes = debtDao.getTotalOwedAmountForGroup(currentUserId, groupId) ?: 0.0
             
-            var totalOwedToYou = 0.0
-            var totalYouOwe = 0.0
-            
-            groupExpenses.forEach { expense ->
-                val splitMembers = expense.splitBy.split(",").map { it.trim() }
-                val splitAmount = expense.amount / splitMembers.size
-                
-                if (expense.paidBy == currentUserId) {
-                    // Current user paid, others owe them
-                    totalOwedToYou += expense.amount - splitAmount
-                } else if (splitMembers.contains(currentUserId)) {
-                    // Current user is part of split, owes the payer
-                    totalYouOwe += splitAmount
-                }
-            }
-            
-            val netBalance = totalOwedToYou - totalYouOwe
+            // Calculate net balance from debts
+            val netBalance = unsettledDebtsOwedToUser - unsettledDebtsUserOwes
             
             val (summary, amount, isOwed) = when {
                 netBalance > 0.01 -> Triple("Others owe Me: $${String.format("%.2f", netBalance)}", netBalance, true)
@@ -341,7 +283,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 else -> Triple("Settled", 0.0, true)
             }
             
-            Log.d("HomeViewModel", "Group $groupId debt summary: $summary")
+            Log.d("HomeViewModel", "Group $groupId debt summary from debts: $summary")
             Triple(summary, amount, isOwed)
             
         } catch (e: Exception) {

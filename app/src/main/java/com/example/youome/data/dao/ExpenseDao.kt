@@ -50,6 +50,19 @@ interface ExpenseDao {
     @Query("DELETE FROM expenses WHERE expenseId = :expenseId")
     suspend fun deleteExpenseById(expenseId: String)
     
+    // Analytics queries
+    @Query("SELECT SUM(amount) FROM expenses WHERE paidBy = :userId AND createdAt >= :startTime AND createdAt <= :endTime")
+    suspend fun getTotalSpendingByUserInRange(userId: String, startTime: Long, endTime: Long): Double?
+    
+    @Query("SELECT COUNT(*) FROM expenses WHERE paidBy = :userId AND createdAt >= :startTime AND createdAt <= :endTime")
+    suspend fun getExpenseCountByUserInRange(userId: String, startTime: Long, endTime: Long): Int
+    
+    @Query("SELECT category FROM expenses WHERE paidBy = :userId AND createdAt >= :startTime AND createdAt <= :endTime GROUP BY category ORDER BY SUM(amount) DESC LIMIT 1")
+    suspend fun getTopCategoryByUserInRange(userId: String, startTime: Long, endTime: Long): String?
+    
+    @Query("SELECT SUM(amount) FROM expenses WHERE paidBy = :userId AND createdAt >= :startTime AND createdAt <= :endTime")
+    suspend fun getWeeklySpendingByUser(userId: String, startTime: Long, endTime: Long): Double?
+    
     @Query("DELETE FROM expenses WHERE groupId = :groupId")
     suspend fun deleteExpensesByGroup(groupId: String)
     
